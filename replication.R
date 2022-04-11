@@ -370,22 +370,14 @@ inner_loop <- function(theta, EV) {
   # Loop between Contraction Iterations and N-K Iterations at most 5x
   for (i in 1:5) { 
     
-    domain_achieved <- 0 # reset this variable every loop
-    max_c_iterations <- max(max_c_iterations, min_c_iterations)
-    
     # 1. Contraction Iterations
     for (j in 1:max_c_iterations) {
       
       EV_next <- bellman(EV, costs, replacement_costs, out = "EV")
       
-      if (any(is.nan(EV_next))) {
-        return(list(EV = EV, "Iterations created NAs and inner loop aborts."))
-      }
-      
       # If the domain of attraction is achieved, break into N-K iterations.
       if (j >= min_c_iterations & 
           check_domain_attraction(EV_next, EV, EV_c_change, domain_tol)) {
-        domain_achieved <- 1
         EV <- EV_next
         break
       }
@@ -401,7 +393,6 @@ inner_loop <- function(theta, EV) {
         return(list(EV = EV, "convergence", EV_change = max(abs(EV - EV_next))))
       }
       
-      EV_c_change <- max(abs(EV - EV_next))
       EV <- EV_next
     }
     
@@ -413,10 +404,6 @@ inner_loop <- function(theta, EV) {
           diag(90) - bellman(EV, costs, replacement_costs, out = "bellman_deriv")
         ) %*% (EV - bellman(EV, costs, replacement_costs, out = "EV"))
       )
-      
-      if (k == 1) {
-        first_EV_change <- max(abs(EV_next - EV))
-      }
       
       # One additional contraction iteration for numerical stability
       EV <- bellman(EV_next, costs, replacement_costs, out = "EV")
@@ -448,9 +435,10 @@ output$EV[1:5,]
 EV <- matrix(rep(10, 90), nrow = 90) # init
 
 partiallf <- function(param) {
+  
   theta_1 <- param[1]
-  replacement_costs <<- param[2]
-  costs <<- matrix(theta_1*(1:90)*.001, nrow = 90)
+  replacement_costs <- param[2]
+  costs <- matrix(theta_1*(1:90)*.001, nrow = 90)
   
   # Inner fixed point loop
   output <- inner_loop(param, EV = matrix(rep(10, 90), nrow = 90))
@@ -483,9 +471,9 @@ ml <- maxBHHH(partiallf, start = c(5, 5))
 #+ results = TRUE
 summary(ml)
 
-#' $\theta_1$ = 2.73 (cost of accumulating mileage);
+#' $\theta_1$ = 2.78 (cost of accumulating mileage);
 #' 
-#' $\theta_2$ = 9.92 (cost of replacing the engine)
+#' $\theta_2$ = 10.16 (cost of replacing the engine)
 #'
 #' Plot EV: the expected value of being in a certain state
 
@@ -500,7 +488,7 @@ tibble(
 #' Plot pchoose0: the probability the agent will choose to keep the engine
 #' instead of replacing it at each mileage state.
 
-bellman(EV, costs, replacement_costs, out = "pchoose0") %>%
+bellman(EV, costs = 2.782828*(1:90)*.001, replacement_costs = 10.155617, out = "pchoose0") %>%
   as.vector() %>%
   tibble(
     p = .,
