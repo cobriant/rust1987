@@ -181,19 +181,15 @@ transitiond0 <- matrix(
   rep(0, 90*90), nrow = 90
 )
 
-for(i in 1:90) {
-  if (i < 89) {
-    transitiond0[i, i] <- probs$pi[1]
-    transitiond0[i, i + 1] <- probs$pi[2]
-    transitiond0[i, i + 2] <- probs$pi[3]
-  } else if (i < 90) {
-    # End state is absorbing
-    transitiond0[i, i] <- probs$pi[1]
-    transitiond0[i, i + 1] <- 1 - probs$pi[1]
-  } else {
-    transitiond0[i, i] <- 1
-  }
+for (i in 1:88) {
+  transitiond0[i, i] <- probs$pi[1]
+  transitiond0[i, i + 1] <- probs$pi[2]
+  transitiond0[i, i + 2] <- probs$pi[3]
 }
+# End state is absorbing
+transitiond0[89, 89] <- probs$pi[1]
+transitiond0[89, 89 + 1] <- 1 - probs$pi[1]
+transitiond0[90, 90] <- 1
 
 transitiond0[1:5, 1:5]
 transitiond0[86:90, 86:90]
