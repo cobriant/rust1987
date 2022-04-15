@@ -7,14 +7,19 @@ My results come close to Rust's results in his original paper: I estimate mainte
 This replication *does*:
 
 ✅ Work fast (1.745) seconds to run the entire replication on my 4 year old laptop.
+
 ✅ Replicate the inner loop, switching between contraction iterations and newton-kantorovich iterations.
+
 ✅ Explain a little more math than Rust's NFXP Algorithm Manual.
+
 ✅ Use better abstractions (IMO) than Rust's gauss code, hopefully making it a little easier to follow.
 
 This replication *does not (yet)*:
 
 ❌ Implement the outer BHHH maximum likelihood loop by hand. Instead, I make use of `maxLik::maxBHHH`.
+
 ❌ Calculate standard errors.
+
 ❌ Calculate implied demand for replacement investment.
 
 Henningsen, Arne and Toomet, Ott (2011). maxLik: A package for maximum likelihood estimation in R. Computational Statistics 26(3), 443-458. DOI 10.1007/s00180-010-0217-1.
