@@ -6,6 +6,7 @@
 #' ---
 #+ message = FALSE
 library(tidyverse)
+library(testthat)
 library(maxLik)
 
 #' # 1. Load Data
@@ -163,7 +164,7 @@ rust %>%
 
 # These probs must sum to 1:
 probs$pi
-probs$pi %>% sum()
+expect_equal(sum(probs$pi), 1)
 
 # If the engine is replaced, w.p. pi0 it will be in mileage bucket 1 next pd.
 # w.p. pi1 it will be in mileage bucket 2 next pd. And w.p. pi2 it will be in
@@ -177,8 +178,8 @@ transitiond1[1:5, 1:5]
 
 # If the engine is not replaced, wp pi0 it will be in the same mileage bucket
 # next period as it is this period. Etc.
-transitiond0 <- matrix(
-  rep(0, 90*90), nrow = 90
+transitiond0 <- matrix( 
+  rep(0, 90*90), nrow = 90 # initialize with zeros
 )
 
 for (i in 1:88) {
@@ -281,6 +282,8 @@ transitiond0[86:90, 86:90]
 #'      \end{array}\right)
 #' $$
 #' 
+#' Note that the rows sum to $\beta$.
+#' 
 
 bellman <- function(EV, costs, replacement_costs, out = "EV") {
   
@@ -316,13 +319,10 @@ bellman <- function(EV, costs, replacement_costs, out = "EV") {
   
   if (out == "bellman_deriv") {
     # Compute the frechet derivative T':
-    dv <- beta * (
-      transitiond0 * matrix(rep(pchoose0, 90), nrow = 90, byrow = T)
-    )
-    dv[,1] <- dv[,1] + beta * (transitiond0 %*% (1 - pchoose0))
-    # dv <- diag(beta*as.vector(pchoose0), nrow = 78, ncol = 78)
-    # dv <- transitiond0 %*% dv
-    # dv[,1] <- beta - rowSums(dv[,2:78])
+    dv <- beta * transitiond0 * matrix(rep(pchoose0, 90), nrow = 90, byrow = T)
+    # Define first column so that rows sum to beta
+    dv[, 1] <- beta - rowSums(dv[, -1])
+    rowSums(dv) %>% near(beta) %>% all() %>% expect_true()
     return(dv)
   }
 }
@@ -357,7 +357,7 @@ inner_loop <- function(theta, EV) {
   
   costs <- (1:90)*.001*theta[1]
   replacement_costs <- theta[2]
-  EV_c_change <- 1 #arbitrary initialization
+  EV_c_change <- 1 
   domain_tol <- .01
   min_c_iterations <- 5
   max_c_iterations <- 40
@@ -471,10 +471,11 @@ summary(ml)
 #' 
 #' $\theta_2$ = 10.16 (cost of replacing the engine)
 #'
-#' Plot EV: the expected value of being in a certain state
+#' Plot EV: the expected value of being in a certain state.
+#' Compare to Rust's figure 4.
 
 tibble(
-  EV = as.vector(EV),
+  EV = -1*as.vector(EV) + max(EV),
   x = 1:90
 ) %>%
   ggplot(aes(x = x, y = EV)) +
@@ -482,14 +483,15 @@ tibble(
   ggtitle("Expected Value")
 
 #' Plot pchoose0: the probability the agent will choose to keep the engine
-#' instead of replacing it at each mileage state.
+#' instead of replacing it at each mileage state. Compare to Rust
+#' figure 5.
 
 bellman(EV, costs = 2.782828*(1:90)*.001, replacement_costs = 10.155617, out = "pchoose0") %>%
   as.vector() %>%
   tibble(
-    p = .,
+    p = 1 - .,
     x = 1:90
   ) %>%
   ggplot(aes(x = x, y = p)) +
   geom_line()  +
-  ggtitle("Probability of keeping the engine")
+  ggtitle("Hazard Function: Probability of Replacing the Engine")
