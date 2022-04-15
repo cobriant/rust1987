@@ -6,7 +6,7 @@ My results come close to Rust's results in his original paper: I estimate mainte
 
 This replication *does*:
 
-✅ Work fast (1.745) seconds to run the entire replication on my 4 year old laptop.
+✅ Work fast (1.745 seconds) to run the entire replication on my 4 year old laptop.
 
 ✅ Replicate the inner loop, switching between contraction iterations and newton-kantorovich iterations.
 
